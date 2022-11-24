@@ -13,7 +13,7 @@ import requests
 '''
 变量填写区
 '''
-misskey_url = ""
+misskey_url = "https://m.isle.moe"      # 实例地址，末尾不要加 /
 misskey_token = ""
 tg_token = ""
 
@@ -28,12 +28,12 @@ dispatcher = updater.dispatcher
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-is_allowed = True
+Status = True
 
 
 def refresh():
-    global is_allowed
-    is_allowed = True
+    global Status
+    Status = True
 
 
 # 北京时间每天 0 点刷新
@@ -51,7 +51,7 @@ def get_invite_code():
 
 def start(update: Update, context: CallbackContext):
     user = update.message.from_user
-    if is_allowed:
+    if Status:
         context.bot.send_message(
             chat_id=user['id'], text="问题：UTC 时区现在几号？（请输入数字）")
         context.bot.send_message(
@@ -67,13 +67,15 @@ dispatcher.add_handler(start_handler)
 
 def verify(update: Update, context: CallbackContext):
     user = update.message.from_user
-    global is_allowed
-    if is_allowed:
+    global Status
+    if Status:
         if update.message.text == datetime.now(timezone.utc).strftime("%d"):
             context.bot.send_message(chat_id=user['id'], text="验证通过")
             context.bot.send_message(
-                chat_id=user['id'], text="邀请码为 "+get_invite_code())
-            is_allowed = False
+                chat_id=user['id'], text="邀请码："+get_invite_code())
+            context.bot.send_message(
+                chat_id=user['id'], text="注册时，请阅读本站服务条款！")
+            Status = False
         else:
             context.bot.send_message(chat_id=user['id'], text="回答错误")
     else:
