@@ -87,3 +87,4 @@ verify_handler = MessageHandler(Filters.text & (~Filters.command), verify)
 dispatcher.add_handler(verify_handler)
 
 updater.start_polling()
+updater.idle()
