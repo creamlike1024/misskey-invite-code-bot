@@ -51,11 +51,10 @@ def get_invite_code():
 
 def start(update: Update, context: CallbackContext):
     user = update.message.from_user
+    global Status
     if Status:
         context.bot.send_message(
-            chat_id=user['id'], text="问题：UTC 时区现在几号？（请输入数字）")
-        context.bot.send_message(
-            chat_id=user['id'], text="提示：UTC 时区比北京时间慢 8 个小时")
+            chat_id=user['id'], text="输入 /getcode 获取邀请码")
     else:
         context.bot.send_message(
             chat_id=user['id'], text="今日邀请码发放已达到上限")
@@ -64,27 +63,22 @@ def start(update: Update, context: CallbackContext):
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-
-def verify(update: Update, context: CallbackContext):
+def getcode(update: Update, context: CallbackContext):
     user = update.message.from_user
     global Status
     if Status:
-        if update.message.text == datetime.now(timezone.utc).strftime("%d"):
-            context.bot.send_message(chat_id=user['id'], text="验证通过")
-            context.bot.send_message(
-                chat_id=user['id'], text="邀请码："+get_invite_code())
-            context.bot.send_message(
-                chat_id=user['id'], text="注册时，请阅读本站服务条款！")
-            Status = False
-        else:
-            context.bot.send_message(chat_id=user['id'], text="回答错误")
+        context.bot.send_message(
+            chat_id=user['id'], text="邀请码："+get_invite_code())
+        context.bot.send_message(
+            chat_id=user['id'], text="注册时，请阅读本站服务条款！")
+        Status = False
     else:
         context.bot.send_message(
             chat_id=user['id'], text="今日邀请码发放已达到上限")
 
 
-verify_handler = MessageHandler(Filters.text & (~Filters.command), verify)
-dispatcher.add_handler(verify_handler)
+getcode_handler = CommandHandler('getcode', getcode)
+dispatcher.add_handler(getcode_handler)
 
 updater.start_polling()
 updater.idle()
