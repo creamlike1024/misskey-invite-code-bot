@@ -16,6 +16,7 @@ import requests
 misskey_url = "https://m.isle.moe"      # 实例地址，末尾不要加 /
 misskey_token = ""
 tg_token = ""
+misskey_version_above_v13 = True    # 如果你的实例版本大于等于 13.0.0，请将此项设置为 True
 
 '''
 变量填写结束
@@ -29,7 +30,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 Status = True
-
+Sum = 0
 
 def refresh():
     global Status
@@ -43,18 +44,30 @@ scheduler.start()
 
 
 def get_invite_code():
-    r = requests.post(misskey_url+'/api/admin/invite',
-                      json={"i": misskey_token})
+    if misskey_version_above_v13:
+        r = requests.post(misskey_url+'/api/invite',
+                          json={"i": misskey_token})
+    else:
+        r = requests.post(misskey_url+'/api/admin/invite',
+                        json={"i": misskey_token})
     value = r.json()
     return value['code']
+
+def gen_random_int():
+    x = randint(1,50)
+    y = randint(1,50)
+    return x,y
 
 
 def start(update: Update, context: CallbackContext):
     user = update.message.from_user
     global Status
     if Status:
+        x,y = gen_random_int()
+        global Sum
+        Sum = x+y
         context.bot.send_message(
-            chat_id=user['id'], text="输入 /getcode 获取邀请码")
+            chat_id=user['id'], text="问题：{}+{}=?".format(x,y))
     else:
         context.bot.send_message(
             chat_id=user['id'], text="今日邀请码发放已达到上限")
@@ -63,22 +76,27 @@ def start(update: Update, context: CallbackContext):
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-def getcode(update: Update, context: CallbackContext):
+
+def verify(update: Update, context: CallbackContext):
     user = update.message.from_user
     global Status
     if Status:
-        context.bot.send_message(
-            chat_id=user['id'], text="邀请码："+get_invite_code())
-        context.bot.send_message(
-            chat_id=user['id'], text="注册时，请阅读本站服务条款！")
-        Status = False
+        if update.message.text == str(Sum):
+            context.bot.send_message(chat_id=user['id'], text="验证通过")
+            context.bot.send_message(
+                chat_id=user['id'], text="邀请码："+get_invite_code())
+            context.bot.send_message(
+                chat_id=user['id'], text="注册时，请阅读本站服务条款！")
+            Status = False
+        else:
+            context.bot.send_message(chat_id=user['id'], text="回答错误")
     else:
         context.bot.send_message(
             chat_id=user['id'], text="今日邀请码发放已达到上限")
 
 
-getcode_handler = CommandHandler('getcode', getcode)
-dispatcher.add_handler(getcode_handler)
+verify_handler = MessageHandler(Filters.text & (~Filters.command), verify)
+dispatcher.add_handler(verify_handler)
 
 updater.start_polling()
 updater.idle()
